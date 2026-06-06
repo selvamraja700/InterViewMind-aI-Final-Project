@@ -1,0 +1,607 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ───────────────────────────────────────────
+   CSS Variables — Design Tokens
+   ─────────────────────────────────────────── */
+:root {
+  --bg-dark: #0d1117;
+  --panel-bg: #161b22;
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+  --text-primary: #e6edf3;
+  --border-color: #30363d;
+  --surface-hover: #1c2333;
+  --text-muted: #8b949e;
+  --danger-red: #f85149;
+  --warning-yellow: #d29922;
+  --warning-orange: #db6d28;
+}
+
+/* ───────────────────────────────────────────
+   Base / Reset
+   ─────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* ───────────────────────────────────────────
+   Custom Scrollbar
+   ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-dark);
+}
+
+/* ───────────────────────────────────────────
+   Monaco Editor Container
+   ─────────────────────────────────────────── */
+.monaco-container {
+  height: 100%;
+  min-height: 300px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.monaco-container .monaco-editor {
+  border-radius: 0;
+}
+
+/* ───────────────────────────────────────────
+   Jake Avatar
+   ─────────────────────────────────────────── */
+.jake-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-color);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+.jake-avatar-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  border: 3px solid var(--border-color);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Jake Speaking — Pulsing green glow */
+.jake-speaking {
+  border-color: var(--accent-green);
+  animation: jake-pulse-green 1.5s ease-in-out infinite;
+}
+
+@keyframes jake-pulse-green {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 18px 6px rgba(34, 197, 94, 0.35);
+  }
+}
+
+/* Jake Listening — Soft blue glow */
+.jake-listening {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 12px 3px rgba(59, 130, 246, 0.25);
+}
+
+/* ───────────────────────────────────────────
+   Sound Wave Bars
+   ─────────────────────────────────────────── */
+.sound-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 24px;
+}
+
+.sound-wave-bar {
+  width: 4px;
+  background-color: var(--accent-green);
+  border-radius: 2px;
+  animation: sound-wave-bounce 0.8s ease-in-out infinite;
+}
+
+.sound-wave-bar:nth-child(1) { animation-delay: 0s; }
+.sound-wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.sound-wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.sound-wave-bar:nth-child(4) { animation-delay: 0.45s; }
+
+.sound-wave-bar.paused {
+  animation-play-state: paused;
+  height: 4px !important;
+}
+
+@keyframes sound-wave-bounce {
+  0%, 100% {
+    height: 6px;
+  }
+  50% {
+    height: 22px;
+  }
+}
+
+/* ───────────────────────────────────────────
+   Subtitle Text
+   ─────────────────────────────────────────── */
+.subtitle-text {
+  animation: subtitle-fade-in 0.3s ease forwards;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.subtitle-text.fade-out {
+  opacity: 0;
+}
+
+@keyframes subtitle-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ───────────────────────────────────────────
+   Chat Bubbles
+   ─────────────────────────────────────────── */
+.chat-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  word-wrap: break-word;
+  animation: subtitle-fade-in 0.25s ease forwards;
+}
+
+.chat-bubble-user {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-ai {
+  background-color: #2d333b;
+  color: var(--text-primary);
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+/* ───────────────────────────────────────────
+   Typing Indicator (Three Dots)
+   ─────────────────────────────────────────── */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 16px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: typing-pulse 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-pulse {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ───────────────────────────────────────────
+   Tab Warning Banner
+   ─────────────────────────────────────────── */
+.tab-warning-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 12px 20px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transform: translateY(-100%);
+  animation: banner-slide-down 0.4s ease forwards;
+}
+
+.tab-warning-banner.warning-yellow {
+  background-color: var(--warning-yellow);
+  color: #0d1117;
+}
+
+.tab-warning-banner.warning-orange {
+  background-color: var(--warning-orange);
+  color: #ffffff;
+}
+
+.tab-warning-banner.warning-red {
+  background-color: var(--danger-red);
+  color: #ffffff;
+}
+
+@keyframes banner-slide-down {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ───────────────────────────────────────────
+   Review Modal — Score Bars
+   ─────────────────────────────────────────── */
+.score-bar-track {
+  width: 100%;
+  height: 10px;
+  background-color: var(--border-color);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 1.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+}
+
+.overall-score-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(34, 197, 94, 0.15));
+  border: 3px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+/* ───────────────────────────────────────────
+   Shake Animation (empty textarea submit)
+   ─────────────────────────────────────────── */
+.shake {
+  animation: shake-anim 0.5s ease;
+}
+
+@keyframes shake-anim {
+  0%, 100% { transform: translateX(0); }
+  16.6% { transform: translateX(-8px); }
+  33.3% { transform: translateX(8px); }
+  50% { transform: translateX(-6px); }
+  66.6% { transform: translateX(6px); }
+  83.3% { transform: translateX(-3px); }
+}
+
+/* ───────────────────────────────────────────
+   Preparation Checklist
+   ─────────────────────────────────────────── */
+.prep-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-green);
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.prep-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: subtitle-fade-in 0.3s ease forwards;
+}
+
+.prep-check::after {
+  content: '✓';
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ───────────────────────────────────────────
+   Difficulty Badges
+   ─────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-easy {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: var(--accent-green);
+}
+
+.badge-medium {
+  background-color: rgba(210, 153, 34, 0.15);
+  color: var(--warning-yellow);
+}
+
+.badge-hard {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: var(--danger-red);
+}
+
+/* ───────────────────────────────────────────
+   Status Dots
+   ─────────────────────────────────────────── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-idle {
+  background-color: var(--accent-green);
+}
+
+.status-dot-speaking {
+  background-color: var(--accent-green);
+  animation: dot-pulse-fast 0.6s ease-in-out infinite;
+}
+
+.status-dot-listening {
+  background-color: var(--accent-blue);
+  animation: dot-pulse-slow 1.2s ease-in-out infinite;
+}
+
+@keyframes dot-pulse-fast {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+@keyframes dot-pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.3); }
+}
+
+/* ───────────────────────────────────────────
+   VoiceButton Pulse Ring
+   ─────────────────────────────────────────── */
+.voice-pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-green);
+  animation: voice-ring 1.5s ease-out infinite;
+}
+
+@keyframes voice-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ───────────────────────────────────────────
+   Overlay
+   ─────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: subtitle-fade-in 0.3s ease forwards;
+}
+
+.overlay-card {
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+}
+
+/* ───────────────────────────────────────────
+   Buttons
+   ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-green), #16a34a);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--danger-red), #cc3a33);
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  box-shadow: 0 0 16px rgba(248, 81, 73, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* ───────────────────────────────────────────
+   Form Inputs
+   ─────────────────────────────────────────── */
+.input-field {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+textarea.input-field {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ───────────────────────────────────────────
+   Wakeup Banner
+   ─────────────────────────────────────────── */
+.wakeup-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998;
+  padding: 8px 20px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 0.8rem;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+  color: #ffffff;
+  animation: banner-slide-down 0.4s ease forwards;
+}
+
+/* ───────────────────────────────────────────
+   Utilities
+   ─────────────────────────────────────────── */
+.panel-border-b {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.panel-border-r {
+  border-right: 1px solid var(--border-color);
+}
+
+.monospace {
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
