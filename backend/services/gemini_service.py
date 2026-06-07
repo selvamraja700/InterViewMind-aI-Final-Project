@@ -72,7 +72,7 @@ def _call_groq_fallback(
         "Content-Type": "application/json",
     }
     payload: Dict[str, Any] = {
-        "model": "llama-3.1-70b-versatile",
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -97,11 +97,14 @@ def _call_groq_fallback(
 
 def parse_problem(problem_text: str) -> Dict[str, Any]:
     system_prompt = (
-        "You are an expert system that parses unstructured coding problem descriptions "
-        "(like LeetCode problems) into structured JSON. Return a JSON object with fields:\n"
+        "You are an expert system that parses unstructured coding problem descriptions (like LeetCode problems) into structured JSON. Return a JSON object with the following fields:\n"
+        "  status: \"valid\" | \"repaired\" | \"invalid\"\n"
+        "  reason: a short explanation only if status is \"invalid\"\n"
         "  title (string), difficulty (Easy|Medium|Hard), topic (string),\n"
-        "  statement (string), constraints (array of strings), examples (array of "
-        "{input, output, explanation?}).\n"
+        "  statement (string), constraints (array of strings), examples (array of {input, output, explanation?})\n"
+        "If the input is clearly not a coding problem, set status to \"invalid\" and provide a reason.\n"
+        "If fields are missing, attempt to infer them and set status to \"repaired\".\n"
+        "If all fields are present and look correct, set status to \"valid\".\n"
         "Return ONLY valid JSON. No markdown, no commentary outside the JSON."
     )
     user_parts = [{"text": f"Parse this problem:\n\n{problem_text}"}]
@@ -120,11 +123,20 @@ def parse_problem(problem_text: str) -> Dict[str, Any]:
             return json.loads(text)
         except Exception as e2:
             print(f"❌ Groq fallback also failed: {e2}")
+            # Both APIs failed — do NOT block the user with status=invalid.
+            # Use a basic heuristic parse so a real question still proceeds.
+            lines = [l.strip() for l in problem_text.strip().splitlines() if l.strip()]
+            title = lines[0] if lines else "Coding Problem"
+            # Truncate title if it looks like a full sentence
+            if len(title) > 80:
+                title = "Coding Problem"
             return {
-                "title": "Coding Problem",
+                "status": "repaired",
+                "reason": "LLM unavailable — basic parse used.",
+                "title": title,
                 "difficulty": "Medium",
                 "topic": "General",
-                "statement": problem_text[:800],
+                "statement": problem_text.strip(),
                 "constraints": [],
                 "examples": [],
             }

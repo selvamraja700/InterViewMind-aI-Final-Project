@@ -10,7 +10,8 @@ class CreateSessionRequest(BaseModel):
 
 
 class ParsedProblem(BaseModel):
-    title: str
+    title: Optional[str] = None
+    question_id: Optional[int] = None
     difficulty: str
     topic: str
     statement: str

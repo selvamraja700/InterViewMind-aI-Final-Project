@@ -6,6 +6,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import database.queries as queries
 from services.gemini_service import parse_problem, chat_with_jake, analyze_screenshot, generate_review
+from services.question_evaluator import evaluate_question
 from services.glot_service import execute_code
 
 load_dotenv()
@@ -29,11 +30,18 @@ def create_session():
     
     if not problem_text:
         return jsonify({"error": "Missing problem_text"}), 400
-        
-    parsed_problem = parse_problem(problem_text)
+
+    # ── Validate / repair the problem via LLM before doing anything else ──────
+    try:
+        parsed_problem = evaluate_question(problem_text)
+    except ValueError as e:
+        # LLM classified the input as invalid junk — block immediately
+        return jsonify({"error": str(e)}), 400
+
     queries.create_session(session_id, problem_text, user_name, parsed_problem)
     
     return jsonify({"session_id": session_id, "problem": parsed_problem})
+
 
 @app.route("/interview/prepare/<session_id>", methods=["GET"])
 def prepare_interview(session_id):

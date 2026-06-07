@@ -13,7 +13,7 @@ from models.schemas import (
     CategoryScores
 )
 from database import queries
-from services import gemini_service, memory_service
+from services.question_evaluator import evaluate_question
 
 router = APIRouter()
 
@@ -33,8 +33,8 @@ async def create_session(request: CreateSessionRequest):
     try:
         session_id = f"session_{uuid.uuid4().hex[:12]}"
         
-        # Parse the problem statement via LLM
-        parsed = await gemini_service.parse_problem(request.problem_text)
+        # Evaluate and validate the problem via the dedicated evaluator service
+        parsed = await evaluate_question(request.problem_text)
         
         # Insert session into PostgreSQL database
         await queries.create_session(
@@ -57,8 +57,12 @@ async def create_session(request: CreateSessionRequest):
             session_id=session_id,
             problem=parsed_problem
         )
+    except HTTPException:
+        # Re-raise validation errors (e.g. invalid question) as-is
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}")
+
 
 
 # ── Server-Sent Events (SSE) preparation ──────────────────────────────────────
