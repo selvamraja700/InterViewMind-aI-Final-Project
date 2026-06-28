@@ -1,0 +1,32 @@
+# Node & Frontend
+node_modules/
+dist/
+build/
+.vite/
+
+# Private Variables and Environment Files (Crucial for Security)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+backend/.env
+
+# Python & Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.pytest_cache/
+
+# IDEs, OS, and Logs
+.DS_Store
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
