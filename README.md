@@ -95,3 +95,10 @@ npm run dev
 - **Sessions**: Tracks the `session_id`, `problem_text`, candidate name, and proctoring stats (`tab_switch_count`).
 - **Messages**: Stores the conversation history and snapshots of the candidate's code at the time of each message.
 - **Reviews**: Stores the final AI-generated feedback and evaluation metrics.
+
+---
+
+## 📦 Stable Release (v1.0.0)
+
+The v1.0.0 Stable Release snapshot is available in this repository. 
+You can view the full release notes and stable version data in the `RELEASE_NOTES.md` file located in the root directory.
