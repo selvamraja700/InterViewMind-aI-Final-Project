@@ -4,12 +4,12 @@ import json
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
+load_dotenv()
 import database.queries as queries
 from services.gemini_service import parse_problem, chat_with_jake, analyze_screenshot, generate_review
 from services.question_evaluator import evaluate_question
 from services.glot_service import execute_code
 
-load_dotenv()
 
 app = Flask(__name__)
 # Enable CORS for the frontend
@@ -79,13 +79,16 @@ def chat():
     history = queries.get_messages(session_id)
     queries.add_message(session_id, "user", user_message, current_code)
     
-    jake_reply = chat_with_jake(
-        session_id=session_id,
-        user_message=user_message,
-        current_code=current_code,
-        problem_text=session["problem_text"],
-        conversation_history=history
-    )
+    try:
+        jake_reply = chat_with_jake(
+            session_id=session_id,
+            user_message=user_message,
+            current_code=current_code,
+            problem_text=session["problem_text"],
+            conversation_history=history
+        )
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
     
     queries.add_message(session_id, "jake", jake_reply, current_code)
     return jsonify({"response": jake_reply})
@@ -107,13 +110,16 @@ def analyze_screen():
     history = queries.get_messages(session_id)
     queries.add_message(session_id, "system", "[Shared screen for analysis]", current_code)
     
-    jake_feedback = analyze_screenshot(
-        session_id=session_id,
-        image_base64=image_base64,
-        problem_text=session["problem_text"],
-        current_code=current_code,
-        conversation_history=history
-    )
+    try:
+        jake_feedback = analyze_screenshot(
+            session_id=session_id,
+            image_base64=image_base64,
+            problem_text=session["problem_text"],
+            current_code=current_code,
+            conversation_history=history
+        )
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
     
     queries.add_message(session_id, "jake", jake_feedback, current_code)
     return jsonify({"response": jake_feedback})
@@ -138,14 +144,17 @@ def end_interview(session_id):
         return jsonify({"error": "Session not found"}), 404
         
     history = queries.get_messages(session_id)
-    review = generate_review(
-        session_id=session_id,
-        problem_text=session["problem_text"],
-        conversation_history=history,
-        cheating_detected=session.get("cheating_detected", False),
-        tab_switch_count=session.get("tab_switch_count", 0),
-        screen_share_count=session.get("screen_share_count", 0)
-    )
+    try:
+        review = generate_review(
+            session_id=session_id,
+            problem_text=session["problem_text"],
+            conversation_history=history,
+            cheating_detected=session.get("cheating_detected", False),
+            tab_switch_count=session.get("tab_switch_count", 0),
+            screen_share_count=session.get("screen_share_count", 0)
+        )
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
     
     queries.save_review(session_id, review)
     return jsonify({"review": review})

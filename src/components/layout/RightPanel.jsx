@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useInterview } from '../../context/InterviewContext';
 import { submitCode } from '../../services/api';
@@ -13,11 +13,51 @@ const LANGUAGE_MAP = {
   'C++': 'cpp',
 };
 
+const CODE_TEMPLATES = {
+  Python: `def solution():
+    pass
+`,
+  JavaScript: `function solution() {
+    // your code here
+}
+`,
+  Java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // your code here
+    }
+}
+`,
+  'C++': `#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+int main() {
+    // your code here
+    return 0;
+}
+`,
+};
+
 export default function RightPanel() {
   const { language, currentCode, setCurrentCode, stdinText, setCodeOutput } = useInterview();
   const [submitting, setSubmitting] = useState(false);
 
   const monacoLang = LANGUAGE_MAP[language] || 'python';
+
+  // Always load the correct template when language changes
+  useEffect(() => {
+    setCurrentCode(CODE_TEMPLATES[language] || '');
+  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load initial template on mount (only if editor is empty)
+  useEffect(() => {
+    if (!currentCode || currentCode.trim() === '') {
+      setCurrentCode(CODE_TEMPLATES['Python']);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEditorChange = useCallback(
     (value) => {

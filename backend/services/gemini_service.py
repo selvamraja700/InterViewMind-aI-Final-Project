@@ -8,7 +8,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash-lite"
 
 # ── Low-level Gemini REST helper ───────────────────────────────────────────────
 
@@ -50,6 +50,8 @@ def _call_gemini(
             json=payload,
         )
         if not response.is_success:
+            print("Gemini status:", response.status_code)
+            print("Gemini body:", response.text)
             raise RuntimeError(f"Gemini API error {response.status_code}: {response.text}")
         
         data = response.json()
@@ -57,15 +59,16 @@ def _call_gemini(
         return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
-# ── Groq Fallback helper ───────────────────────────────────────────────────────
+# ── Groq Primary helper ───────────────────────────────────────────────────────
 
-def _call_groq_fallback(
+def _call_groq(
     system_prompt: str,
     user_prompt: str,
     json_mode: bool = False,
 ) -> str:
     if not GROQ_API_KEY:
-        raise ValueError("GROQ_API_KEY is not set in environment — no fallback available.")
+        raise ValueError("GROQ_API_KEY is not set.")
+
 
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -88,9 +91,24 @@ def _call_groq_fallback(
             headers=headers,
             json=payload,
         )
+        if not response.is_success:
+            print("Groq status:", response.status_code)
+            print("Groq body:", response.text)
         response.raise_for_status()
         data = response.json()
         return data["choices"][0]["message"]["content"]
+
+
+def _clean_json(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    return text
 
 
 # ── Parse Problem ──────────────────────────────────────────────────────────────
@@ -110,36 +128,20 @@ def parse_problem(problem_text: str) -> Dict[str, Any]:
     user_parts = [{"text": f"Parse this problem:\n\n{problem_text}"}]
 
     try:
-        text = _call_gemini(system_prompt, user_parts, json_mode=True)
-        return json.loads(text)
+        text = _call_groq(
+            system_prompt,
+            f"Parse this problem:\n\n{problem_text}",
+            json_mode=True,
+        )
+        return json.loads(_clean_json(text))
     except Exception as e:
-        print(f"⚠️ Gemini parse_problem failed: {e}. Trying Groq...")
+        print(f"⚠️ Groq parse_problem failed: {e}. Trying Gemini...")
         try:
-            text = _call_groq_fallback(
-                system_prompt,
-                f"Parse this problem:\n\n{problem_text}",
-                json_mode=True,
-            )
-            return json.loads(text)
+            text = _call_gemini(system_prompt, user_parts, json_mode=True)
+            return json.loads(_clean_json(text))
         except Exception as e2:
-            print(f"❌ Groq fallback also failed: {e2}")
-            # Both APIs failed — do NOT block the user with status=invalid.
-            # Use a basic heuristic parse so a real question still proceeds.
-            lines = [l.strip() for l in problem_text.strip().splitlines() if l.strip()]
-            title = lines[0] if lines else "Coding Problem"
-            # Truncate title if it looks like a full sentence
-            if len(title) > 80:
-                title = "Coding Problem"
-            return {
-                "status": "repaired",
-                "reason": "LLM unavailable — basic parse used.",
-                "title": title,
-                "difficulty": "Medium",
-                "topic": "General",
-                "statement": problem_text.strip(),
-                "constraints": [],
-                "examples": [],
-            }
+            print(f"❌ Gemini fallback also failed: {e2}")
+            raise RuntimeError("All AI services failed to parse the problem.")
 
 
 # ── Jake Persona Prompt ────────────────────────────────────────────────────────
@@ -147,8 +149,8 @@ def parse_problem(problem_text: str) -> Dict[str, Any]:
 JAKE_SYSTEM_PROMPT = """You are Jake, a senior technical recruiter and software engineer conducting a live technical coding interview.
 
 Rules:
-1. NEVER give away solutions, complete algorithms, or correct code.
-2. Guide with hints, Socratic questions, and light nudges only.
+1. NEVER reveal the answer, core formulas, complete algorithms, or correct code directly.
+2. ONLY provide hints if the candidate explicitly asks for a hint. Otherwise, guide them purely with Socratic questions to make them figure it out themselves.
 3. Ask ONE question at a time. Keep responses under 4 sentences.
 4. Follow the natural interview stages:
    - Stage 1: Clarify the problem, ask for brute-force approach.
@@ -156,7 +158,8 @@ Rules:
    - Stage 3: Comment on live code progress — style, edge cases, logic.
    - Stage 4: Ask for test cases and edge case dry-runs.
 5. Be professional, encouraging, and direct.
-6. NEVER admit you are an AI, Gemini, or a chatbot. You are Jake — a real human interviewer."""
+6. NEVER admit you are an AI, Gemini, or a chatbot. You are Jake — a real human interviewer.
+7. If the candidate asks about irrelevant or out-of-topic subjects, strictly respond with: "We focus on problem solving. I am not going to answer out-of-topic questions." and immediately steer them back to the code."""
 
 
 # ── Chat with Jake ─────────────────────────────────────────────────────────────
@@ -184,14 +187,14 @@ def chat_with_jake(
     user_parts = [{"text": prompt_text}]
 
     try:
-        return _call_gemini(JAKE_SYSTEM_PROMPT, user_parts).strip()
+        return _call_groq(JAKE_SYSTEM_PROMPT, prompt_text).strip()
     except Exception as e:
-        print(f"⚠️ Gemini chat failed: {e}. Trying Groq...")
+        print(f"⚠️ Groq chat failed: {e}. Trying Gemini...")
         try:
-            return _call_groq_fallback(JAKE_SYSTEM_PROMPT, prompt_text)
+            return _call_gemini(JAKE_SYSTEM_PROMPT, user_parts).strip()
         except Exception as e2:
-            print(f"❌ Fallback also failed: {e2}")
-            return "That's a good point. Can you walk me through how you're thinking about the time complexity here?"
+            print(f"❌ Gemini also failed: {e2}")
+            raise RuntimeError("All AI services failed to respond.")
 
 
 # ── Analyze Screenshot ─────────────────────────────────────────────────────────
@@ -229,18 +232,17 @@ def analyze_screenshot(
     }
 
     try:
-        return _call_gemini(JAKE_SYSTEM_PROMPT, [text_part, image_part]).strip()
+        return _call_groq(
+            JAKE_SYSTEM_PROMPT,
+            f"The candidate shared a screenshot. Current code:\n{current_code or '(None)'}\nGive brief constructive feedback as Jake."
+        ).strip()
     except Exception as e:
-        print(f"⚠️ Gemini vision failed: {e}. Falling back to text-only Groq...")
+        print(f"⚠️ Groq vision failed: {e}. Trying Gemini...")
         try:
-            return _call_groq_fallback(
-                JAKE_SYSTEM_PROMPT,
-                f"The candidate shared a screenshot. Current code:\n{current_code or '(None)'}\n"
-                "Give brief constructive feedback as Jake.",
-            )
+            return _call_gemini(JAKE_SYSTEM_PROMPT, [text_part, image_part]).strip()
         except Exception as e2:
-            print(f"❌ Fallback also failed: {e2}")
-            return "I can see your screenshot. How does your current solution compare to the brute force you described?"
+            print(f"❌ Gemini also failed: {e2}")
+            raise RuntimeError("All AI services failed to analyze the screen.")
 
 
 # ── Generate Interview Review ──────────────────────────────────────────────────
@@ -284,26 +286,13 @@ def generate_review(
     )
 
     try:
-        text = _call_gemini(system_prompt, [{"text": user_text}], json_mode=True)
-        return json.loads(text)
+        text = _call_groq(system_prompt, user_text, json_mode=True)
+        return json.loads(_clean_json(text))
     except Exception as e:
-        print(f"⚠️ Gemini review failed: {e}. Trying Groq...")
+        print(f"⚠️ Groq review failed: {e}. Trying Gemini...")
         try:
-            text = _call_groq_fallback(system_prompt, user_text, json_mode=True)
-            return json.loads(text)
+            text = _call_gemini(system_prompt, [{"text": user_text}], json_mode=True)
+            return json.loads(_clean_json(text))
         except Exception as e2:
-            print(f"❌ Fallback also failed: {e2}")
-            base = 30 if cheating_detected else 72
-            return {
-                "category_scores": {
-                    "problem_solving": base,
-                    "communication": base + 5,
-                    "code_quality": base - 3,
-                    "optimization": base - 8,
-                    "edge_cases": base + 2,
-                },
-                "overall_score": base,
-                "strongest": "Problem decomposition",
-                "weakest": "Optimization awareness",
-                "feedback": "The AI evaluator encountered a technical issue. Scores are estimated based on available interview data.",
-            }
+            print(f"❌ Gemini also failed: {e2}")
+            raise RuntimeError("All AI services failed to generate the review.")

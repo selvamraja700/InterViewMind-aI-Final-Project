@@ -13,6 +13,7 @@ export default function useVoice() {
   const silenceTimerRef = useRef(null);
   const onTranscriptRef = useRef(null);
   const isMountedRef = useRef(true);
+  const utteranceRef = useRef(null);
 
   // Check browser support
   const SpeechRecognition =
@@ -165,6 +166,7 @@ export default function useVoice() {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance; // Keep a reference to prevent garbage collection
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 

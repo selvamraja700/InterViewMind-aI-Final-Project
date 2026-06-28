@@ -20,8 +20,7 @@ export default function NameScreen() {
     }
 
     if (isOverLimit) {
-      setUserName(null);
-      navigate('/problem');
+      setError('Name must be 8 characters or less.');
       return;
     }
 
@@ -91,6 +90,7 @@ export default function NameScreen() {
             autoFocus
             autoComplete="off"
             aria-label="Your name"
+            maxLength={8}
             style={{
               borderColor: isOverLimit ? 'var(--danger-red)' : undefined,
             }}

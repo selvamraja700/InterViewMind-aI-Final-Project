@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInterview } from '../../context/InterviewContext';
 import { createSession, prepareInterview } from '../../services/api';
 
@@ -22,7 +23,9 @@ export default function PreparationScreen({ speakText }) {
 
   const [completed, setCompleted] = useState({});
   const [fadingOut, setFadingOut] = useState(false);
+  const [error, setError] = useState(null);
   const hasStarted = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (hasStarted.current) return;
@@ -50,9 +53,10 @@ export default function PreparationScreen({ speakText }) {
             setTimeout(() => {
               setInterviewActive(true);
 
-              // Jake's opening message
+              // Jake's opening message — ask for self-introduction first
+              const greeting = userName ? `Hi ${userName}!` : 'Hi there!';
               const firstMessage =
-                "Great, I've reviewed the problem. Walk me through your initial brute force approach.";
+                `${greeting} I'm Jake, your interviewer today. Before we dive into the problem, could you please give me a quick introduction about yourself — your background, experience, and what you've been working on recently?`;
 
               addMessage({
                 id: Date.now(),
@@ -70,6 +74,7 @@ export default function PreparationScreen({ speakText }) {
       });
       } catch (err) {
         console.error("Failed to prepare interview:", err);
+        setError(err.message || "Failed to initialize the interview. Please ensure the backend server is running and try again.");
       }
     }
 
@@ -85,62 +90,97 @@ export default function PreparationScreen({ speakText }) {
       }}
     >
       <div className="overlay-card" style={{ maxWidth: '480px' }}>
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <span
-            style={{
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-green))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            Preparing Your Interview
-          </span>
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: '0.85rem',
-              marginTop: '8px',
-            }}
-          >
-            Jake is reviewing your problem and setting up the session...
-          </p>
-        </div>
-
-        {/* Checklist */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {CHECKLIST_ITEMS.map((item) => {
-            const done = completed[item.key];
-            return (
-              <div
-                key={item.key}
+        {error ? (
+          <div style={{ textAlign: 'center' }}>
+            <span
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: 'var(--danger-red)',
+                display: 'block',
+                marginBottom: '12px'
+              }}
+            >
+              ⚠️ Setup Failed
+            </span>
+            <p
+              style={{
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                lineHeight: '1.5',
+                marginBottom: '24px'
+              }}
+            >
+              {error}
+            </p>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate('/problem')}
+              style={{ width: '100%' }}
+            >
+              Back to Problem Setup
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
+                  fontSize: '1.25rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, var(--accent-blue), var(--accent-green))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                 }}
               >
-                {done ? (
-                  <div className="prep-check" />
-                ) : (
-                  <div className="prep-spinner" />
-                )}
-                <span
-                  style={{
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                    color: done ? 'var(--text-primary)' : 'var(--text-muted)',
-                    transition: 'color 0.3s ease',
-                  }}
-                >
-                  {item.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                Preparing Your Interview
+              </span>
+              <p
+                style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.85rem',
+                  marginTop: '8px',
+                }}
+              >
+                Jake is reviewing your problem and setting up the session...
+              </p>
+            </div>
+
+            {/* Checklist */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {CHECKLIST_ITEMS.map((item) => {
+                const done = completed[item.key];
+                return (
+                  <div
+                    key={item.key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                    }}
+                  >
+                    {done ? (
+                      <div className="prep-check" />
+                    ) : (
+                      <div className="prep-spinner" />
+                    )}
+                    <span
+                      style={{
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        color: done ? 'var(--text-primary)' : 'var(--text-muted)',
+                        transition: 'color 0.3s ease',
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
